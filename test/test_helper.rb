@@ -16,7 +16,12 @@ end
 ActiveRecord::Base.default_timezone = :utc
 ActiveRecord::Base.time_zone_aware_attributes = true
 
+class Team < ActiveRecord::Base
+  has_many :users
+end
+
 class User < ActiveRecord::Base
+  belongs_to :team
 end
 
 # migrations
@@ -26,7 +31,12 @@ end
   ActiveRecord::Migration.create_table :users, :force => true do |t|
     t.string :name
     t.integer :score
+    t.integer :team_id
     t.timestamps
+  end
+  
+  ActiveRecord::Migration.create_table :teams, :force => true do |t|
+    t.string :name
   end
 end
 
@@ -364,6 +374,15 @@ module TestGroupdate
   def test_previous_scopes
     create_user "2013-05-01 00:00:00 UTC"
     assert_empty User.where("id = 0").group_by_day(:created_at).count
+  end
+  
+  def test_associations
+    user = create_user "2013-05-01 00:00:00 UTC"
+    team = user.create_team! :name => "Team Andrew"
+    
+    expected = {}
+
+    assert_equal expected, team.users.group_by_week(:created_at).count
   end
 
   # helpers
